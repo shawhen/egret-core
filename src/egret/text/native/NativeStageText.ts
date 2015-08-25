@@ -82,7 +82,7 @@ module egret {
 
         /**
          * @private
-         * 
+         *
          */
         private createText():void {
             var container:egret.DisplayObjectContainer = this.container;
@@ -143,8 +143,8 @@ module egret {
 
         /**
          * @private
-         * 
-         * @returns 
+         *
+         * @returns
          */
         public $getText():string {
             if (!this.textValue) {
@@ -155,8 +155,8 @@ module egret {
 
         /**
          * @private
-         * 
-         * @param value 
+         *
+         * @param value
          */
         public $setText(value:string):void {
             this.textValue = value;
@@ -166,8 +166,8 @@ module egret {
 
         /**
          * @private
-         * 
-         * @param type 
+         *
+         * @param type
          */
         public $setTextType(type:string):void {
             this.textType = type;
@@ -177,8 +177,8 @@ module egret {
 
         /**
          * @private
-         * 
-         * @returns 
+         *
+         * @returns
          */
         public $getTextType():string {
             return this.textType;
@@ -193,7 +193,7 @@ module egret {
 
         /**
          * @private
-         * 
+         *
          */
         private resetText():void {
             if (this.textType == "password") {
@@ -230,7 +230,10 @@ module egret {
         //全屏键盘
         private showScreenKeyboard():void {
             var self = this;
-            self.dispatchEvent(new egret.Event("blur"));
+
+            self.dispatchEvent(new egret.Event("focus"));
+            Event.dispatchEvent(self, "focus", false, {"showing" : true});
+
             egret_native.EGT_TextInput = function (appendText:string) {
                 if (self.$textfield.multiline) {//多行文本
                     if (self.isFinishDown) {
@@ -250,6 +253,7 @@ module egret {
                     egret_native.TextInputOp.setKeybordOpen(false);
 
                     self.dispatchEvent(new egret.Event("updateText"));
+                    self.dispatchEvent(new egret.Event("blur"));
                 }
             };
 
@@ -258,20 +262,22 @@ module egret {
                 if (self.$textfield.multiline) {//多行文本
                     self.isFinishDown = true;
                 }
+                self.dispatchEvent(new egret.Event("blur"));
             };
         }
 
         /**
          * @private
-         * 
+         *
          */
         private showPartKeyboard():void {
+            var self = this;
+            self.dispatchEvent(new egret.Event("focus"));
+
             var container:egret.DisplayObjectContainer = this.container;
             var stage:egret.Stage = egret.MainContext.instance.stage;
             stage.addChild(container);
             this.createText();
-
-            var self = this;
 
             egret_native.EGT_TextInput = function (appendText:string) {
                 if (self.$textfield.multiline) {//多行文本
@@ -313,7 +319,7 @@ module egret {
 
         /**
          * @private
-         * 
+         *
          */
         public $show():void {
             var self = this;
@@ -340,7 +346,7 @@ module egret {
 
         /**
          * @private
-         * 
+         *
          */
         public $remove():void {
             var container = this.container;
@@ -351,7 +357,7 @@ module egret {
 
         /**
          * @private
-         * 
+         *
          */
         public $hide():void {
             this.$remove();
