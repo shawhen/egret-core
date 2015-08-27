@@ -64,5 +64,7 @@ module egret {
         }
     }
 
-    VersionController = Html5VersionController;
+    if (egret.MainContext.runtimeType == egret.MainContext.RUNTIME_HTML5) {
+        VersionController = Html5VersionController;
+    }
 }

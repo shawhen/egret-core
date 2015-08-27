@@ -248,5 +248,7 @@ module egret {
         }
     }
 
-    VersionController = NativeVersionController;
+    if (egret.MainContext.runtimeType == egret.MainContext.RUNTIME_NATIVE) {
+        VersionController = NativeVersionController;
+    }
 }
