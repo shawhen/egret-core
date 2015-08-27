@@ -108,13 +108,20 @@ module egret.sys {
             }
             this.isPlaying = true;
             if (!this.root) {
-                //this.loadVersion(this.initialize.bind(this));
-                this.initialize();
+                this.loadVersion(this.initialize.bind(this));
             }
             $ticker.$addPlayer(this);
         }
 
         private loadVersion(completeCall:()=>void):void {
+            //版本控制自动修改 请勿更改
+            //This variable is used to load the file judgement, please do not change it
+            var egretNeedVersionCtr = false;
+            if (!egretNeedVersionCtr) {
+                completeCall();
+                return;
+            }
+
             var ctr = new egret.VersionController(this.stage);
             egret.NetContext.getNetContext().initVersion(ctr);
 
