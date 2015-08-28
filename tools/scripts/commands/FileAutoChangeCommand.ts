@@ -26,9 +26,6 @@ class FileAutoChangeCommand implements egret.Command {
 
         var url = file.join(params.getProjectRoot(), "libs/core/egret/player/Player.js");
         var native_require = file.read(url);
-        console.log(url);
-        console.log(this.debug)
-        console.log(this.versonCtrClassName)
 
         native_require = native_require.replace(/var egretNeedVersionCtr =.*/, "var egretNeedVersionCtr = " + ((this.debug || !this.versonCtrClassName) ? "false" : "true") + ";");
         file.save(url, native_require);
