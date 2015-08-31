@@ -50,6 +50,9 @@ module egret {
         private _frames:any[] = null;
         private _totalFrames:number = 0;
         public _frameLabels:any[] = null;
+        private _labelStartFrame:number = 0;
+        private _labelEndFrame:number = 0;
+        public _frameEvents:any[] = null;
         private _frameIntervalTime:number = 0;
         public _eventPool:string[] = null;
 
@@ -84,6 +87,7 @@ module egret {
                 this._frames = movieClipData.frames;
                 this._totalFrames = movieClipData.numFrames;
                 this._frameLabels = movieClipData.labels;
+                this._frameEvents = movieClipData.events;
                 this._frameIntervalTime = 1000 / movieClipData.frameRate;
                 this._initFrame();
             }
@@ -108,7 +112,7 @@ module egret {
             }
         }
 
-        public _render(renderContext:RendererContext):void {
+        public _render(renderContext:RendererContext):void { 
             var texture = this._textureToRender;
             this._texture_to_render = texture;
             if (texture) {
@@ -173,7 +177,20 @@ module egret {
             }
             return null;
         }
-
+        private _setFrameLabelNames(lableName:string):void{
+            var frameLabels = this._frameLabels;
+            if(frameLabels){
+                var outputFramelabel:FrameLabel = null;                
+                for (var i = 0; i < frameLabels.length; i++) {
+                    outputFramelabel = frameLabels[i];
+                    if(lableName == frameLabels[i]["name"]){
+                        this._labelStartFrame = frameLabels[i]["frame"];
+                        this._labelEndFrame = frameLabels[i]["end"];
+                        break;
+                    }
+                }
+            }
+        }
         /**
          * 返回指定序号的帧的FrameLabel对象
          * @method egret.MovieClip#getFrameLabelByFrame
@@ -266,7 +283,10 @@ module egret {
             if (arguments.length === 0 || arguments.length > 2) {
                 $error(1022, "MovieClip.gotoAndPlay()");
             }
-            this.play(playTimes);
+            if (typeof frame === "string") {
+                this._setFrameLabelNames(frame);
+            }
+            this.play(playTimes);            
             this._gotoFrame(frame);
         }
 
@@ -286,7 +306,7 @@ module egret {
         private _gotoFrame(frame:any): void
         {
             var frameNum:number;
-            if(typeof frame === "string"){
+            if(typeof frame === "string"){                
                 frameNum = this._getFrameLabelByName(frame).frame;
             }else{
                 frameNum = parseInt(frame+'', 10);
@@ -324,7 +344,8 @@ module egret {
             while(num >= 1) {
                 num--;
                 self._nextFrameNum++;
-                if(self._nextFrameNum > self._totalFrames){
+                //console.log(self._labelEndFrame);
+                if(self._nextFrameNum > self._totalFrames || (self._labelEndFrame>0 && self._nextFrameNum > self._labelEndFrame)){
                     if(self._playTimes == -1){
                         self._eventPool.push(Event.LOOP_COMPLETE);
                         self._nextFrameNum = 1;
@@ -343,6 +364,9 @@ module egret {
                         }
                     }
                 }
+                if(self._currentFrameNum == self._labelEndFrame){
+                    self._nextFrameNum = self._labelStartFrame;
+                }
                 self._advanceFrame();
             }
             self._constructFrame();
@@ -350,15 +374,20 @@ module egret {
             self._setDirty();
         }
 
-        public _advanceFrame(): void{
-            this._currentFrameNum = this._nextFrameNum;
+        public _advanceFrame(): void{ 
+            this._currentFrameNum = this._nextFrameNum; 
         }
 
         private _constructFrame() {
-            var currentFrameNum:number = this._currentFrameNum;
+            var currentFrameNum:number = this._currentFrameNum; 
             if(this._displayedKeyFrameNum == currentFrameNum){
                 return;
             }
+            var event = this._frameEvents[currentFrameNum];
+            if(event && event!=""){
+                this.dispatchEvent(new egret.Event(event));
+            }
+            //console.log(this._frameEvents);
             this._textureToRender = this._movieClipData.getTextureByFrame(currentFrameNum);
             this._DO_Props_._sizeDirty = true;
             this._displayedKeyFrameNum = currentFrameNum;
