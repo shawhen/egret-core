@@ -281,7 +281,7 @@ module egret.sys {
 
         }
 
-
+        private isFirst:boolean = true;
         /**
          * @private
          * 更新舞台尺寸
@@ -299,8 +299,13 @@ module egret.sys {
                     this.stageDisplayList.setDevicePixelRatio(pixelRatio);
                     this.stageDisplayList.setClipRect(stageWidth, stageHeight);
                 }
-                stage.dispatchEventWith(Event.RESIZE);
                 stage.$invalidate(true);
+            }
+            if (!this.isFirst) {
+                stage.dispatchEventWith(Event.RESIZE);
+            }
+            else {
+                this.isFirst = false;
             }
         }
 
