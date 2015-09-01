@@ -177,7 +177,10 @@ module egret {
             }
             return null;
         }
-        private _setFrameLabelNames(lableName:string):void{
+        /**
+         * 根据帧标签，设置开始和结束的帧数
+         */
+        private _setFrameLabelFrames(lableName:string):void{
             var frameLabels = this._frameLabels;
             if(frameLabels){
                 var outputFramelabel:FrameLabel = null;                
@@ -284,7 +287,7 @@ module egret {
                 $error(1022, "MovieClip.gotoAndPlay()");
             }
             if (typeof frame === "string") {
-                this._setFrameLabelNames(frame);
+                this._setFrameLabelFrames(frame);
             }
             this.play(playTimes);            
             this._gotoFrame(frame);

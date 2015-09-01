@@ -37,14 +37,14 @@ module egret {
     {
         private _name: string;
         private _frame: number /*int*/;
-        private _end: number = 0;/*int*/
+        private _end: number = 0 /*int*/;
 
         constructor (name: string, frame: number /*int*/,end?:any/*int*/)
         {
             super();
             this._name = name;
             this._frame = frame | 0;
-            this._end = end | 0;
+            if(end) this._end = end | 0;
         }
 
         /**
@@ -74,7 +74,7 @@ module egret {
          * @method egret.FrameLabel#clone
          */
         public clone() {
-            return new FrameLabel(this._name, this._frame);
+            return new FrameLabel(this._name, this._frame ,this._end);
         }
     }
 
