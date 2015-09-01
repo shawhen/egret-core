@@ -186,9 +186,9 @@ module egret {
                 var outputFramelabel:FrameLabel = null;                
                 for (var i = 0; i < frameLabels.length; i++) {
                     outputFramelabel = frameLabels[i];
-                    if(lableName == frameLabels[i]["name"]){
-                        this._labelStartFrame = frameLabels[i]["frame"];
-                        this._labelEndFrame = frameLabels[i]["end"];
+                    if(lableName == outputFramelabel.name){
+                        this._labelStartFrame = outputFramelabel.frame;
+                        this._labelEndFrame = outputFramelabel.end;
                         break;
                     }
                 }
