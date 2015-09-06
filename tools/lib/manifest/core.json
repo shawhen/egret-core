@@ -118,6 +118,7 @@
         "extension/game/system/MainContext.ts",
 
         "extension/game/display/FrameLabel.ts",
+        "extension/game/display/MovieClipEvent.ts",
         "extension/game/display/MovieClipData.ts",
         "extension/game/display/MovieClipDataFactory.ts",
         "extension/game/display/MovieClip.ts",
