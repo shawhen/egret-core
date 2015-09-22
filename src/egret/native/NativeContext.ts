@@ -92,6 +92,8 @@ declare module egret_native {
 
     function getOption(type:string):string;
 
+    function setScreenCanvas(canvas:Canvas):void;
+
     module Audio {
         function preloadBackgroundMusic(path:string):void;
 
@@ -301,7 +303,7 @@ declare module egret_native {
     }
 
     class RenderContext {
-        clearScreen(r:number, g:number, b:number):void;
+        clearScreen(r:number, g:number, b:number, a?:number):void;
 
         drawImage(texture:any, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight):void;
 
@@ -312,6 +314,12 @@ declare module egret_native {
         pushClip(x:number, y:number, w:number, h:number):void;
 
         popClip():void;
+
+        save():void;
+
+        restore():void;
+
+        pushRectStencils(arr:Array<number>):void;
     }
 
     class Canvas {

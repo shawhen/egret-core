@@ -38,24 +38,29 @@ module egret.native {
          */
         constructor() {
             super();
+            this.init();
+        }
+
+        private init():void {
+            this.renderContext = new NativeRenderContext();
         }
 
         /**
          * @private
          * @inheritDoc
          */
-        public renderContext:egret.sys.RenderContext = new NativeRenderContext();
+        public renderContext:NativeRenderContext;
 
         public toDataURL(type?: string, ...args: any[]): string {
-            if(this.$nativeRenderTexture) {
-                return this.$nativeRenderTexture.toDataURL.apply(this, arguments);
+            if(this.$nativeCanvas) {
+                return this.$nativeCanvas.toDataURL.apply(this, arguments);
             }
             return null;
         }
 
         public saveToFile(type:string, filePath:string):void {
-            if(this.$nativeRenderTexture) {
-                this.$nativeRenderTexture.saveToFile(type, filePath);
+            if(this.$nativeCanvas) {
+                this.$nativeCanvas.saveToFile(type, filePath);
             }
         }
 
@@ -68,14 +73,27 @@ module egret.native {
         }
 
         public set width(value:number) {
-            this.$width = value;
-            if(!this.$isDispose) {
-                this.$widthReadySet = true;
-                this.createRenderTexture();
+            if(value > 0) {
+                this.$width = value;
+                if(!this.$nativeCanvas) {
+                    this.$nativeCanvas = new egret_native.Canvas(value, 1);
+                    if(this.$isRoot) {
+                        egret_native.setScreenCanvas(this.$nativeCanvas);
+                    }
+                    var context = this.$nativeCanvas.getContext("2d");
+                    context.clearScreen(255,0,0,0);
+                    this.renderContext.$nativeContext = context;
+                }
+                else {
+                    this.$nativeCanvas.width = value;
+                }
             }
+            //if(!this.$isDispose) {
+            //    this.$widthReadySet = true;
+            //    this.createRenderTexture();
+            //}
         }
         private $width: number;
-        private $widthReadySet:boolean = false;
 
         /**
          * @private
@@ -86,53 +104,56 @@ module egret.native {
         }
 
         public set height(value:number) {
-            this.$height = value;
-            if(!this.$isDispose) {
-                this.$heightReadySet = true;
-                this.createRenderTexture();
+            if(value > 0) {
+                this.$height = value;
+                if(!this.$nativeCanvas) {
+                    this.$nativeCanvas = new egret_native.Canvas(1, value);
+                    if(this.$isRoot) {
+                        egret_native.setScreenCanvas(this.$nativeCanvas);
+                    }
+                    var context = this.$nativeCanvas.getContext("2d");
+                    context.clearScreen(0,0,0,0);
+                    this.renderContext.$nativeContext = context;
+                }
+                else {
+                    this.$nativeCanvas.height = value;
+                }
             }
+            //if(!this.$isDispose) {
+            //    this.$heightReadySet = true;
+            //    this.createRenderTexture();
+            //}
         }
         private $height: number;
-        private $heightReadySet:boolean = false;
-
-        public $nativeRenderTexture;
         public $isRoot:boolean = false;
 
-        private createRenderTexture():void {
-            if(this.$isRoot) {
-                return;
-            }
-            if(this.$widthReadySet && this.$heightReadySet) {
-                if(this.$nativeRenderTexture) {
-                    this.$nativeRenderTexture.dispose();
-                }
-                this.$nativeRenderTexture = new egret_native.RenderTexture(this.$width, this.$height);
-                this.$widthReadySet = false;
-                this.$heightReadySet = false;
-            }
+        public $nativeCanvas;
+
+        public setRootCanvas():void {
+            egret_native.setScreenCanvas(this.$nativeCanvas);
         }
 
         public begin():void {
-            if(this.$nativeRenderTexture) {
-                //console.log("begin");
-                this.$nativeRenderTexture.begin();
-            }
+            //if(this.$nativeRenderTexture) {
+            //    //console.log("begin");
+            //    this.$nativeRenderTexture.begin();
+            //}
         }
 
         public end():void {
-            if(this.$nativeRenderTexture) {
-                //console.log("end");
-                this.$nativeRenderTexture.end();
-            }
+            //if(this.$nativeRenderTexture) {
+            //    //console.log("end");
+            //    this.$nativeRenderTexture.end();
+            //}
         }
 
         private $isDispose:boolean = false;
 
         public $dispose():void {
-            if(this.$nativeRenderTexture) {
-                this.$nativeRenderTexture.dispose();
-                this.$nativeRenderTexture = null;
-            }
+            //if(this.$nativeRenderTexture) {
+            //    this.$nativeRenderTexture.dispose();
+            //    this.$nativeRenderTexture = null;
+            //}
             this.$isDispose = true;
         }
 
