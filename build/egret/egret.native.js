@@ -1418,8 +1418,7 @@ var egret;
                 stage.$maxTouches = option.maxTouches;
                 stage.textureScaleFactor = option.textureScaleFactor;
                 //设置帧频到native
-                stage.frameRate = 60;
-                egret_native.setFrameRate(option.frameRate > 60 ? 60 : option.frameRate);
+                stage.frameRate = option.frameRate;
                 if (!egret_native.Canvas) {
                     stage.addEventListener(egret.Event.ENTER_FRAME, function () {
                         if (native.$currentSurface) {
@@ -2383,7 +2382,12 @@ var egret;
             }
             if (egret_native.isRecordExists(filePath)) {
                 var str = egret_native.loadRecord(filePath);
-                localStorageData = JSON.parse(str);
+                try {
+                    localStorageData = JSON.parse(str);
+                }
+                catch (e) {
+                    localStorageData = {};
+                }
             }
             else {
                 localStorageData = {};

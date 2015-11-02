@@ -680,6 +680,7 @@ var egret;
                  * @private
                  */
                 this.clipRectChanged = false;
+                this.$dirtyRegionPolicy = sys.DirtyRegionPolicy.ON;
             }
             var d = __define,c=DirtyRegion;p=c.prototype;
             /**
@@ -727,7 +728,9 @@ var egret;
                 var dirtyList = this.dirtyList;
                 var region = sys.Region.create();
                 dirtyList.push(region.setTo(minX, minY, maxX, maxY));
-                this.mergeDirtyList(dirtyList);
+                if (this.$dirtyRegionPolicy != sys.DirtyRegionPolicy.OFF) {
+                    this.mergeDirtyList(dirtyList);
+                }
                 return true;
             };
             /**
@@ -747,8 +750,7 @@ var egret;
              */
             p.getDirtyRegions = function () {
                 var dirtyList = this.dirtyList;
-                if (egret.Capabilities.runtimeType == egret.RuntimeType.NATIVE && !egret.native["$supportCanvas" + ""]) {
-                    //todo 现在为全部dirty
+                if (this.$dirtyRegionPolicy == sys.DirtyRegionPolicy.OFF || (egret.Capabilities.runtimeType == egret.RuntimeType.NATIVE && !egret.native["$supportCanvas" + ""])) {
                     this.clipRectChanged = true; //阻止所有的addRegion()
                     this.clear();
                     var region = sys.Region.create();
@@ -810,6 +812,9 @@ var egret;
                     return true;
                 }
                 return false;
+            };
+            p.setDirtyRegionPolicy = function (policy) {
+                this.$dirtyRegionPolicy = policy;
             };
             return DirtyRegion;
         })();
@@ -1907,6 +1912,86 @@ var egret;
         })();
         sys.Region = Region;
         egret.registerClass(Region,"egret.sys.Region");
+    })(sys = egret.sys || (egret.sys = {}));
+})(egret || (egret = {}));
+//////////////////////////////////////////////////////////////////////////////////////
+//
+//  Copyright (c) 2014-2015, Egret Technology Inc.
+//  All rights reserved.
+//  Redistribution and use in source and binary forms, with or without
+//  modification, are permitted provided that the following conditions are met:
+//
+//     * Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//     * Neither the name of the Egret nor the
+//       names of its contributors may be used to endorse or promote products
+//       derived from this software without specific prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY EGRET AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
+//  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+//  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+//  IN NO EVENT SHALL EGRET AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+//  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+//  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;LOSS OF USE, DATA,
+//  OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+//  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+//  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+//  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+//////////////////////////////////////////////////////////////////////////////////////
+var egret;
+(function (egret) {
+    var sys;
+    (function (sys) {
+        /**
+         * @language en_US
+         * Values for the dirty region policy
+         * @version Egret 2.5
+         * @platform Web,Native
+         */
+        /**
+         * @language zh_CN
+         * 脏矩形策略常量。
+         * @version Egret 2.5
+         * @platform Web,Native
+         */
+        var DirtyRegionPolicy = (function () {
+            function DirtyRegionPolicy() {
+            }
+            var d = __define,c=DirtyRegionPolicy;p=c.prototype;
+            /**
+             * @language en_US
+             * Close automatic detection of dirty region
+             * @version Egret 2.5
+             * @platform Web,Native
+             */
+            /**
+             * @language zh_CN
+             * 关闭自动脏矩形检测
+             * @version Egret 2.5
+             * @platform Web,Native
+             */
+            DirtyRegionPolicy.OFF = "off";
+            /**
+             * @language en_US
+             * Open automatic detection of dirty region
+             * @version Egret 2.5
+             * @platform Web,Native
+             */
+            /**
+             * @language zh_CN
+             * 开启自动脏矩形检测
+             * @version Egret 2.5
+             * @platform Web,Native
+             */
+            DirtyRegionPolicy.ON = "on";
+            return DirtyRegionPolicy;
+        })();
+        sys.DirtyRegionPolicy = DirtyRegionPolicy;
+        egret.registerClass(DirtyRegionPolicy,"egret.sys.DirtyRegionPolicy");
     })(sys = egret.sys || (egret.sys = {}));
 })(egret || (egret = {}));
 //////////////////////////////////////////////////////////////////////////////////////
@@ -4208,7 +4293,7 @@ var egret;
                             drawCalls += this.drawWithScrollRect(child, context, dirtyList, rootMatrix, clipRegion);
                         }
                         else {
-                            if (DEBUG && child["isFPS"]) {
+                            if (child["isFPS"]) {
                                 this.drawDisplayObject(child, context, dirtyList, rootMatrix, child.$displayList, clipRegion);
                             }
                             else {
@@ -4491,6 +4576,10 @@ var egret;
                 this.$pixelRatio = ratio;
                 this.$ratioMatrix.setTo(ratio, 0, 0, ratio, 0, 0);
                 this.root.$invalidate(true);
+            };
+            p.setDirtyRegionPolicy = function (policy) {
+                //todo 这里还可以做更多优化
+                this.dirtyRegion.setDirtyRegionPolicy(policy);
             };
             return DisplayList;
         })(egret.HashObject);
@@ -4894,11 +4983,9 @@ var egret;
             var y = values[7 /* offsetY */];
             if (values[1 /* image */]) {
                 var values = this.$Bitmap;
-                var w = !isNaN(values[11 /* explicitBitmapWidth */]) ? values[11 /* explicitBitmapWidth */] : values[8 /* width */];
-                var h = !isNaN(values[12 /* explicitBitmapHeight */]) ? values[12 /* explicitBitmapHeight */] : values[9 /* height */];
-                var tsX = w / values[8 /* width */];
-                var tsY = h / values[9 /* height */];
-                bounds.setTo(0, 0, w + x * tsX, h + y * tsY);
+                var w = !isNaN(values[11 /* explicitBitmapWidth */]) ? values[11 /* explicitBitmapWidth */] : x + values[4 /* clipWidth */];
+                var h = !isNaN(values[12 /* explicitBitmapHeight */]) ? values[12 /* explicitBitmapHeight */] : y + values[5 /* clipHeight */];
+                bounds.setTo(0, 0, w, h);
             }
             else {
                 w = !isNaN(values[11 /* explicitBitmapWidth */]) ? values[11 /* explicitBitmapWidth */] : 0;
@@ -6965,10 +7052,11 @@ var egret;
                 return this._strokeStyle;
             }
             ,function (value) {
-                if (typeof value == "number") {
-                    value = egret.toColorString(value);
+                var tmpValue = value;
+                if (typeof tmpValue == "number") {
+                    tmpValue = egret.toColorString(tmpValue);
                 }
-                this._strokeStyle = value;
+                this._strokeStyle = tmpValue;
                 this.pushCommand(4 /* strokeStyle */, arguments);
             }
         );
@@ -7072,11 +7160,11 @@ var egret;
                 return;
             }
             if (anticlockwise) {
-                var temp = endAngle;
-                endAngle = startAngle;
-                startAngle = temp;
+                this.arcBounds(x, y, radius, endAngle, startAngle);
             }
-            this.arcBounds(x, y, radius, startAngle, endAngle);
+            else {
+                this.arcBounds(x, y, radius, startAngle, endAngle);
+            }
         };
         /**
          * @private
@@ -7090,29 +7178,27 @@ var egret;
                 this.extendByPoint(x + radius, y + radius);
                 return;
             }
-            var offset = 0;
             if (startAngle > endAngle) {
-                offset = TwoPI;
-                endAngle += offset;
+                endAngle += TwoPI;
             }
             var startX = Math.cos(startAngle) * radius;
             var endX = Math.cos(endAngle) * radius;
             var xMin = Math.min(startX, endX);
             var xMax = Math.max(startX, endX);
-            if (startAngle <= (PI + offset) && endAngle >= (PI + offset)) {
-                xMin = -radius;
-            }
-            if (startAngle <= offset && endAngle >= offset) {
-                xMax = radius;
-            }
             var startY = Math.sin(startAngle) * radius;
             var endY = Math.sin(endAngle) * radius;
             var yMin = Math.min(startY, endY);
             var yMax = Math.max(startY, endY);
-            if (startAngle <= (PacPI + offset) && endAngle >= (PacPI + offset)) {
+            if (startAngle <= PI && endAngle >= PI) {
+                xMin = -radius;
+            }
+            if (startAngle <= TwoPI && endAngle >= TwoPI) {
+                xMax = radius;
+            }
+            if (startAngle <= PacPI && endAngle >= PacPI) {
                 yMin = -radius;
             }
-            if (startAngle <= (HalfPI + offset) && endAngle >= (HalfPI + offset)) {
+            if (startAngle <= HalfPI && endAngle >= HalfPI) {
                 yMax = radius;
             }
             this.extendByPoint(xMin + x, yMin + y);
@@ -8096,6 +8182,10 @@ var egret;
             scale /= egret.$TextureScaleFactor;
             var width = (bounds.x + bounds.width) * scale;
             var height = (bounds.y + bounds.height) * scale;
+            if (clipBounds) {
+                width = bounds.width * scale;
+                height = bounds.height * scale;
+            }
             this.context = this.createRenderContext(width, height);
             if (!this.context) {
                 return false;
@@ -8343,7 +8433,12 @@ var egret;
                 context.setTransform(m.a, m.b, m.c, m.d, m.tx, m.ty);
             }
             context.beginPath();
-            context.rect(scrollRect.x, scrollRect.y, scrollRect.width, scrollRect.height);
+            if (rootMatrix) {
+                context.rect(scrollRect.x, scrollRect.y, scrollRect.width, scrollRect.height);
+            }
+            else {
+                context.rect(0, 0, scrollRect.width, scrollRect.height);
+            }
             context.clip();
             if (rootMatrix) {
                 context.setTransform(rootMatrix.a, rootMatrix.b, rootMatrix.c, rootMatrix.d, rootMatrix.tx, rootMatrix.ty);
@@ -9129,6 +9224,23 @@ var egret;
                 this.$screen.updateMaxTouches();
             }
         );
+        /**
+         * @language en_US
+         * Set dirty region policy
+         * @param policy One of the constants defined by egret.sys.DirtyRegionPolicy
+         * @version Egret 2.5
+         * @platform Web,Native
+         */
+        /**
+         * @language zh_CN
+         * 设置脏矩形策略
+         * @param policy egret.sys.DirtyRegionPolicy定义的常量之一
+         * @version Egret 2.5
+         * @platform Web,Native
+         */
+        p.setDirtyRegionPolicy = function (policy) {
+            this.$displayList.setDirtyRegionPolicy(policy);
+        };
         return Stage;
     })(egret.DisplayObjectContainer);
     egret.Stage = Stage;
@@ -14190,7 +14302,6 @@ var egret;
                     for (var i = 0; i < length; i++) {
                         info += arguments[i] + " ";
                     }
-                    console.log(123456);
                     sys.$logToFPS(info);
                     console.log.apply(console, toArray(arguments));
                 };
@@ -14969,6 +15080,11 @@ var egret;
                 }
                 this.$frameRate = value;
                 if (value > 60) {
+                    value = 60;
+                }
+                //todo
+                if (egret.Capabilities.runtimeType == egret.RuntimeType.NATIVE) {
+                    egret_native.setFrameRate(value);
                     value = 60;
                 }
                 //这里用60*1000来避免浮点数计算不准确的问题。
@@ -16946,7 +17062,7 @@ var egret;
                 5: 0,
                 6: 0,
                 7: 0,
-                8: "sans-serif",
+                8: TextField.default_fontFamily,
                 9: "left",
                 10: "top",
                 11: "#ffffff",
@@ -18073,7 +18189,12 @@ var egret;
                 w += 2;
                 h += 2;
             }
-            bounds.setTo(0, 0, w, h);
+            var _strokeDouble = this.$TextField[27 /* stroke */] * 2;
+            if (_strokeDouble > 0) {
+                w += _strokeDouble * 2;
+                h += _strokeDouble * 2;
+            }
+            bounds.setTo(-_strokeDouble, -_strokeDouble, w, h);
         };
         /**
          * @private
@@ -18560,7 +18681,7 @@ var egret;
         var italic = style.italic == null ? textField.$TextField[16 /* italic */] : style.italic;
         var bold = style.bold == null ? textField.$TextField[15 /* bold */] : style.bold;
         var size = style.size == null ? textField.$TextField[0 /* fontSize */] : style.size;
-        var fontFamily = style.fontFamily == null ? textField.$TextField[8 /* fontFamily */] : style.fontFamily;
+        var fontFamily = style.fontFamily || textField.$TextField[8 /* fontFamily */] || TextField.default_fontFamily;
         var font = italic ? "italic " : "normal ";
         font += bold ? "bold " : "normal ";
         font += size + "px " + fontFamily;

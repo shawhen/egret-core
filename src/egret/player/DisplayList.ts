@@ -410,7 +410,7 @@ module egret.sys {
                         drawCalls += this.drawWithScrollRect(child, context, dirtyList, rootMatrix, clipRegion);
                     }
                     else {
-                        if (DEBUG && child["isFPS"]) {
+                        if (child["isFPS"]) {
                             this.drawDisplayObject(child, context, dirtyList, rootMatrix, child.$displayList, clipRegion);
                         }
                         else {
@@ -714,6 +714,11 @@ module egret.sys {
             this.$pixelRatio = ratio;
             this.$ratioMatrix.setTo(ratio, 0, 0, ratio, 0, 0);
             this.root.$invalidate(true);
+        }
+
+        public setDirtyRegionPolicy(policy:string):void {
+            //todo 这里还可以做更多优化
+            this.dirtyRegion.setDirtyRegionPolicy(policy);
         }
     }
 }
