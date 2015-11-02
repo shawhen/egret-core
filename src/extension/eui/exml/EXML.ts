@@ -34,7 +34,7 @@ module EXML {
     var parser = new eui.sys.EXMLParser();
 
     var requestPool: egret.HttpRequest[] = [];
-    var callBackMap:any = {};
+    var callBackMap: {[index: string]: [[(clazz:any, url:string) => void]]} = {};
     var parsedClasses:any = {};
     var $prefixURL: string = "";
     /**

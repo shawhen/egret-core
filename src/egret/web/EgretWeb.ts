@@ -86,7 +86,7 @@ module egret.web {
 
     /**
      * @private
-     * 启动心跳计时器。
+     * 启动心跳计时器。每次浏览器的重绘前将调用ticker.update
      */
     function startTicker(ticker:egret.sys.SystemTicker):void {
         var requestAnimationFrame =
@@ -138,6 +138,7 @@ module egret.web {
     egret.runEgret = runEgret;
     egret.updateAllScreens = updateAllScreens;
 
+    // 浏览器大小适应,调用egret.updateAllScreens
     var resizeTimer:number = NaN;
 
     function doResize() {

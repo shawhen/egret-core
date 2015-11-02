@@ -170,6 +170,7 @@ module egret.sys {
          */
         $render(triggerByFrame:boolean):void {
             if (this.showFPS || this.showLog) {
+                // 总是把fps面板放到最上面去渲染
                 this.stage.addChild(this.fpsDisplay);
             }
             this.callLaters();
@@ -199,7 +200,7 @@ module egret.sys {
                     }
                     dirtyRatio = Math.ceil(dirtyArea * 1000 / (stage.stageWidth * stage.stageHeight)) / 10;
                 }
-                this.fpsDisplay.update(drawCalls, dirtyRatio, t1 - t, t2 - t1);
+                this.fpsDisplay.update(drawCalls, dirtyRatio, t1 - t/*计算脏矩形耗时*/, t2 - t1/*渲染耗时*/);
             }
         }
 
