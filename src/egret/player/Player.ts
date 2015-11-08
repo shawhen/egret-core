@@ -342,14 +342,8 @@ module egret.sys {
         updateInfo(info:string):void;
     }
 
-    declare
-    var FPS:{new (stage:Stage, showFPS:boolean, showLog:boolean, logFilter:string, styles:Object):FPS};
+    declare var FPS:{new (stage:Stage, showFPS:boolean, showLog:boolean, logFilter:string, styles:Object):FPS};
 
-    /**
-     * @private
-     */
-    declare
-    var $extends:Function;
     /**
      * @private
      */
@@ -479,6 +473,7 @@ module egret.sys {
             this.totalTick = 0;
             this.lastTime = 0;
             this.drawCalls = 0;
+            this.dirtyRatio = 0;
             this._stage = stage;
             this.showFPS = showFPS;
             this.showLog = showLog;
@@ -530,16 +525,18 @@ module egret.sys {
             this.lastTime = current;
             this.totalTick++;
             this.drawCalls = Math.max(drawCalls, this.drawCalls);
+            this.dirtyRatio = Math.max(dirtyRatio, this.dirtyRatio);
             if (this.totalTime > 500) {
                 var lastFPS = Math.round(this.totalTick * 1000 / this.totalTime);
                 this.totalTick = 0;
                 this.totalTime = 0;
-                var text = "FPS: " + lastFPS + "\nDraw: " + this.drawCalls + "," + dirtyRatio + "%\nCost: " + args.join(",");
+                var text = "FPS: " + lastFPS + "\nDraw: " + this.drawCalls + "," + this.dirtyRatio + "%\nCost: " + args.join(",");
                 if (this.textField.text != text) {
                     this.textField.text = text;
                     this.updateLayout();
                 }
                 this.drawCalls = 0;
+                this.dirtyRatio = 0;
             }
         };
         /**

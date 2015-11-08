@@ -949,7 +949,6 @@ var egret;
 (function (egret) {
     var native;
     (function (native) {
-        native.$currentSurface;
         /**
          * @private
          * 呈现最终绘图结果的画布
@@ -1471,6 +1470,12 @@ var egret;
                 //    scaley = displayHeight / stageHeight;
                 //this.webTouchHandler.updateScaleMode(scalex, scaley, rotation);
                 //this.webInput.$updateSize();
+            };
+            p.setContentSize = function (width, height) {
+                var option = this.playerOption;
+                option.contentWidth = width;
+                option.contentHeight = height;
+                this.updateScreenSize();
             };
             /**
              * @private
