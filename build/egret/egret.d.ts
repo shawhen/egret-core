@@ -1290,7 +1290,7 @@ declare module egret {
         /**
          * @private
          * 标记此显示对象需要重绘。此方法会触发自身的cacheAsBitmap重绘。如果只是矩阵改变，自身显示内容并不改变，应该调用$invalidateTransform().
-         * @param notiryChildren 是否标记子项也需要重绘。传入false或不传入，将只标记自身需要重绘。通常只有alpha属性改变会需要通知子项重绘。
+         * @param notiryChildren 是否标记子项也需要重绘。传入false或不传入，将只标记自身需要重绘。注意:当子项cache时不会继续向下标记
          */
         $invalidate(notifyChildren?: boolean): void;
         /**
@@ -1323,7 +1323,7 @@ declare module egret {
          * @private
          * 更新对象在舞台上的显示区域和透明度,返回显示区域是否发生改变。
          */
-        $update(): boolean;
+        $update(bounds?: Rectangle): boolean;
         /**
          * @private
          * 获取相对于指定根节点的连接矩阵。
@@ -1357,7 +1357,7 @@ declare module egret {
          * 注意，不要在大量物体中使用精确碰撞像素检测，这回带来巨大的性能开销
          * @param x {number}  要测试的此对象的 x 坐标。
          * @param y {number}  要测试的此对象的 y 坐标。
-         * @param shapeFlag {boolean} 是检查对象 (true) 的实际像素，还是检查边框 (false) 的实际像素。暂未实现。
+         * @param shapeFlag {boolean} 是检查对象 (true) 的实际像素，还是检查边框 (false) 的实际像素。
          * @returns {boolean} 如果显示对象与指定的点重叠或相交，则为 true；否则为 false。
          * @version Egret 2.4
          * @platform Web,Native
@@ -1531,6 +1531,10 @@ declare module egret {
         /**
          * @private
          */
+        $refreshImageData(): void;
+        /**
+         * @private
+         */
         private setImageData(image, clipX, clipY, clipWidth, clipHeight, offsetX, offsetY, width, height);
         /**
          * @private
@@ -1561,7 +1565,6 @@ declare module egret {
         /**
          * @language en_US
          * Determines how the bitmap fills in the dimensions.
-         * ends at the edge of the region.</p>
          * <p>When set to <code>BitmapFillMode.REPEAT</code>, the bitmap
          * repeats to fill the region.</p>
          * <p>When set to <code>BitmapFillMode.SCALE</code>, the bitmap
@@ -2081,6 +2084,12 @@ declare module egret {
          * @private
          */
         $hitTest(stageX: number, stageY: number): DisplayObject;
+        /**
+         * @private
+         * 子项有可能会被cache而导致标记失效。重写此方法,以便在赋值时对子项深度遍历标记脏区域
+         */
+        $setAlpha(value: number): boolean;
+        private $invalidateAllChildren();
     }
 }
 declare module egret {
@@ -2695,6 +2704,10 @@ declare module egret {
          * @platform Web,Native
          */
         fillStyle: any;
+        /**
+         * @private
+         */
+        private _maxLineWidth;
         /**
          * @private
          */
@@ -3354,13 +3367,13 @@ declare module egret {
         private _textureWidth;
         /**
          * @language en_US
-         * Texture width
+         * Texture width, read only
          * @version Egret 2.4
          * @platform Web,Native
          */
         /**
          * @language zh_CN
-         * 纹理宽度
+         * 纹理宽度，只读属性，不可以设置
          * @version Egret 2.4
          * @platform Web,Native
          */
@@ -3373,13 +3386,13 @@ declare module egret {
         private _textureHeight;
         /**
          * @language en_US
-         * Texture height
+         * Texture height, read only
          * @version Egret 2.4
          * @platform Web,Native
          */
         /**
          * @language zh_CN
-         * 纹理高度
+         * 纹理高度，只读属性，不可以设置
          * @version Egret 2.4
          * @platform Web,Native
          */
@@ -3507,10 +3520,10 @@ declare module egret {
          */
         dispose(): void;
         private static _displayList;
-        static $addDisplayObject(displayObject: DisplayObject, bitmapDataHashCode: number): void;
-        static $removeDisplayObject(displayObject: DisplayObject, bitmapDataHashCode: number): void;
-        static $invalidate(bitmapDataHashCode: number): void;
-        static $dispose(bitmapDataHashCode: number): void;
+        static $addDisplayObject(displayObject: DisplayObject, bitmapData: BitmapData | Texture): void;
+        static $removeDisplayObject(displayObject: DisplayObject, bitmapData: BitmapData | Texture): void;
+        static $invalidate(bitmapData: BitmapData | Texture): void;
+        static $dispose(bitmapData: BitmapData | Texture): void;
     }
 }
 declare module egret {
@@ -4030,27 +4043,28 @@ declare module egret {
          * @default 99
          */
         maxTouches: number;
+        private $dirtyRegionPolicy;
         /**
          * @language en_US
          * Set dirty region policy
-         * @param policy One of the constants defined by egret.sys.DirtyRegionPolicy
-         * @version Egret 2.5
+         * One of the constants defined by egret.DirtyRegionPolicy
+         * @version Egret 2.5.5
          * @platform Web,Native
          */
         /**
          * @language zh_CN
          * 设置脏矩形策略
-         * @param policy egret.sys.DirtyRegionPolicy定义的常量之一
-         * @version Egret 2.5
+         * egret.DirtyRegionPolicy 定义的常量之一
+         * @version Egret 2.5.5
          * @platform Web,Native
          */
-        setDirtyRegionPolicy(policy: string): void;
+        dirtyRegionPolicy: string;
         /**
          * @language en_US
          * Set resolution size
          * @param width width
          * @param height height
-         * @version Egret 2.5
+         * @version Egret 2.5.5
          * @platform Web,Native
          */
         /**
@@ -4058,7 +4072,7 @@ declare module egret {
          * 设置分辨率尺寸
          * @param width 宽度
          * @param height 高度
-         * @version Egret 2.5
+         * @version Egret 2.5.5
          * @platform Web,Native
          */
         setContentSize(width: number, height: number): void;
@@ -8042,7 +8056,7 @@ declare module egret {
      * The SoundChannel class contains a stop() method, properties for
      * set the volume of the channel
      *
-     * @event egret.Event.SOUND_COMPLETE Dispatch when a sound has finished playing
+     * @event egret.Event.SOUND_COMPLETE Dispatch when a sound has finished playing at last time
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample egret/media/Sound.ts
@@ -8052,7 +8066,7 @@ declare module egret {
      * SoundChannel 类控制应用程序中的声音。每个声音均分配给一个声道，而且应用程序可以具有混合在一起的多个声道。
      * SoundChannel 类包含 stop() 方法、用于设置音量和监视播放进度的属性。
      *
-     * @event egret.Event.SOUND_COMPLETE 音频播放完成时抛出
+     * @event egret.Event.SOUND_COMPLETE 音频最后一次播放完成时抛出
      * @version Egret 2.4
      * @platform Web,Native
      * @includeExample egret/media/Sound.ts
@@ -8301,13 +8315,6 @@ declare module egret {
         new (): Video;
     };
 }
-declare module egret.native {
-    /**
-     * @private
-     * 转换 Image，Canvas，Video 为 Egret 框架内使用的 BitmapData 对象。
-     */
-    function toBitmapData(data: any): BitmapData;
-}
 declare module egret_native {
     var nativeType: string;
     /**
@@ -8317,6 +8324,7 @@ declare module egret_native {
     function startGame(): void;
     function loglevel(logType: any): void;
     function callRender(): void;
+    function getVersion(): any;
     function setScreenCanvas(canvas: Canvas): void;
     function setFrameRate(frameRate: number): void;
     function onTouchesBegin(num: number, ids: Array<any>, xs_array: Array<any>, ys_array: Array<any>): any;
@@ -8933,6 +8941,19 @@ declare module egret {
          * @platform Web,Native
          */
         new (): ImageLoader;
+        /**
+         * @language en_US
+         * Specifies whether to enable cross-origin resource sharing, If ImageLoader instance has been set crossOrigin property will be used to set the property.
+         * @version Egret 2.5.7
+         * @platform Web,Native
+         */
+        /**
+         * @language zh_CN
+         * 指定是否启用跨域资源共享,如果ImageLoader实例有设置过crossOrigin属性将使用设置的属性
+         * @version Egret 2.5.7
+         * @platform Web,Native
+         */
+        crossOrigin: string;
     };
 }
 declare module egret.sys {
@@ -8994,7 +9015,7 @@ declare module egret.sys {
         setDirtyRegionPolicy(policy: string): void;
     }
 }
-declare module egret.sys {
+declare module egret {
     /**
      * @language en_US
      * Values for the dirty region policy
@@ -9362,7 +9383,7 @@ declare module egret.sys {
          * @private
          * 渲染屏幕
          */
-        $render(triggerByFrame: boolean): void;
+        $render(triggerByFrame: boolean, costTicker: number): void;
         /**
          * @private
          *
@@ -10104,6 +10125,28 @@ declare module egret {
          * 在此模式下，舞台高度(Stage.stageHeight)始终等于初始化时外部传入的应用程序内容高度。舞台宽度(Stage.stageWidth)由当前的缩放比例与播放器视口宽度决定。
          */
         static FIXED_HEIGHT: string;
+        /**
+         * @language en_US
+         * Keep the original aspect ratio scaling application content, after scaling application content in the horizontal and vertical directions to fill the viewport player,a narrow direction may not be wide enough and fill.<br/>
+         * In this mode, the stage height (Stage.stageHeight) and the stage width (Stage.stageWidth) by the current scale with the player viewport size.
+         */
+        /**
+         * @language zh_CN
+         * 保持原始宽高比缩放应用程序内容，缩放后应用程序内容在水平和垂直方向都填满播放器视口，应用程序内容的较窄方向可能会不够宽而填充。<br/>
+         * 在此模式下，舞台高度(Stage.stageHeight)和舞台宽度(Stage.stageWidth)由当前的缩放比例与播放器视口宽高决定。
+         */
+        static FIXED_NARROW: string;
+        /**
+         * @language en_US
+         * Keep the original aspect ratio scaling application content, after scaling application content in the horizontal and vertical directions to fill the viewport player, a wide direction may exceed the viewport and the player is cut.<br/>
+         * In this mode, the stage height (Stage.stageHeight) and the stage width (Stage.stageWidth) by the current scale with the player viewport size.
+         */
+        /**
+         * @language zh_CN
+         * 保持原始宽高比缩放应用程序内容，缩放后应用程序内容在水平和垂直方向都填满播放器视口，应用程序内容的较宽方向的两侧可能会超出播放器视口而被裁切。<br/>
+         * 在此模式下，舞台高度(Stage.stageHeight)和舞台宽度(Stage.stageWidth)由当前的缩放比例与播放器视口宽高决定。
+         */
+        static FIXED_WIDE: string;
     }
 }
 declare module egret.sys {
@@ -10126,6 +10169,11 @@ declare module egret.sys {
      * 全局共享的RenderContext。通常用于交换缓存，测量文本或创建填充对象。
      */
     var sharedRenderContext: sys.RenderContext;
+    /**
+     * @private
+     * 全局共享的供精确像素检测使用的RenderContext。
+     */
+    var hitTestRenderContext: sys.RenderContext;
     /**
      * @private
      * surfaceFactory实例
@@ -10232,6 +10280,11 @@ declare module egret.sys {
         private lastCount;
         /**
          * @private
+         * ticker 花销的时间
+         */
+        private costEnterFrame;
+        /**
+         * @private
          * 执行一次刷新
          */
         update(): void;
@@ -10239,7 +10292,7 @@ declare module egret.sys {
          * @private
          * 执行一次屏幕渲染
          */
-        private render(triggerByFrame);
+        private render(triggerByFrame, costTicker);
         /**
          * @private
          * 广播EnterFrame事件。
@@ -10785,6 +10838,25 @@ declare module egret {
          * @platform Web,Native
          */
         static runtimeType: string;
+        /***
+         * @language en_US
+         * version of the native support
+         * @type {string}
+         * @version Egret 2.5
+         * @platform Web,Native
+         */
+        /***
+         * @language zh_CN
+         * native support 的版本号
+         * @type {string}
+         * @version Egret 2.5
+         * @platform Web,Native
+         */
+        static supportVersion: string;
+        /**
+         * 设置系统信息
+         */
+        static $setNativeCapabilities(value: string): void;
     }
 }
 declare var testDeviceType: () => boolean;
@@ -10975,6 +11047,14 @@ declare module egret.sys {
          * @private 测量的值
          */
         textHeight = 9,
+        /**
+         * @private
+         */
+        textAlign = 10,
+        /**
+         * @private
+         */
+        verticalAlign = 11,
     }
 }
 declare module egret {
@@ -11064,7 +11144,7 @@ declare module egret {
         font: Object;
         $setFont(value: any): boolean;
         /**
-        /**
+         /**
          * @language en_US
          * An integer representing the amount of vertical space between lines.
          * @default 0
@@ -11096,6 +11176,38 @@ declare module egret {
          */
         letterSpacing: number;
         $setLetterSpacing(value: number): boolean;
+        /**
+         * @language en_US
+         * Horizontal alignment of text.
+         * @default：egret.HorizontalAlign.LEFT
+         * @version Egret 2.5.6
+         * @platform Web,Native
+         */
+        /**
+         * @language zh_CN
+         * 文本的水平对齐方式。
+         * @default：egret.HorizontalAlign.LEFT
+         * @version Egret 2.5.6
+         * @platform Web,Native
+         */
+        textAlign: string;
+        $setTextAlign(value: string): boolean;
+        /**
+         * @language en_US
+         * Vertical alignment of text.
+         * @default：egret.VerticalAlign.TOP
+         * @version Egret 2.5.6
+         * @platform Web,Native
+         */
+        /**
+         * @language zh_CN
+         * 文字的垂直对齐方式。
+         * @default：egret.VerticalAlign.TOP
+         * @version Egret 2.5.6
+         * @platform Web,Native
+         */
+        verticalAlign: string;
+        $setVerticalAlign(value: string): boolean;
         /**
          * @language en_US
          * A ratio of the width of the space character. This value is multiplied by the height of the first character is the space character width.
@@ -11148,15 +11260,27 @@ declare module egret {
         /**
          * @private
          */
-        private textOffsetX;
+        private $textOffsetX;
         /**
          * @private
          */
-        private textOffsetY;
+        private $textOffsetY;
+        /**
+         * @private
+         */
+        private $textStartX;
+        /**
+         * @private
+         */
+        private $textStartY;
         /**
          * @private
          */
         private textLines;
+        /**
+         * @private 每一行文字的宽度
+         */
+        private $textLinesWidth;
         /**
          * @private
          */
@@ -11658,6 +11782,10 @@ declare module egret {
         _setText(value: string): void;
         /**
          * @private
+         */
+        _setColor(value: number): void;
+        /**
+         * @private
          *
          * @param event
          */
@@ -11732,6 +11860,12 @@ declare module egret {
          * @param value
          */
         $setText(value: string): boolean;
+        /**
+         * @private
+         *
+         * @param value
+         */
+        $setColor(value: number): boolean;
         /**
          * @private
          *
@@ -12525,6 +12659,7 @@ declare module egret {
          * 不能重写$invalidateContentBounds，因为内部graphics调用clear时会触发$invalidateContentBounds这狗方法，从而导致死循环。
          */
         $invalidateTextField(): void;
+        $update(bounds?: Rectangle): boolean;
         /**
          * @private
          */
@@ -13018,8 +13153,8 @@ declare module egret {
         /**
          * @language en_US
          * The length of the ByteArray object (in bytes).
-         * If the length is set to be larger than the current length, the right-side zero padding byte array.
-         * If the length is set smaller than the current length, the byte array is truncated.
+                  * If the length is set to be larger than the current length, the right-side zero padding byte array.
+                  * If the length is set smaller than the current length, the byte array is truncated.
          * @version Egret 2.4
          * @platform Web,Native
          */
@@ -14195,7 +14330,6 @@ declare module egret {
      * Get the url parameter corresponds to the browser, access to the corresponding parameter in the Runtime setOption
      * @method egret.getOption
      * @param key {string} Parameters key
-     * @private
      * @version Egret 2.4
      * @platform Web,Native
      */
@@ -14205,7 +14339,6 @@ declare module egret {
      * 在浏览器中相当于获取url中参数，在Runtime获取对应setOption参数
      * @method egret.getOption
      * @param key {string} 参数key
-     * @private
      * @version Egret 2.4
      * @platform Web,Native
      */
@@ -14397,6 +14530,23 @@ declare module egret {
      * @platform Web,Native
      */
     function stopTick(callBack: (timeStamp: number) => boolean, thisObject: any): void;
+}
+declare module egret {
+    /**
+     * @language zh_CN
+     * 转换 Image，Canvas，Video 为 Egret 框架内使用的 BitmapData 对象。
+     * @param data 需要转换的对象，包括HTMLImageElement|HTMLCanvasElement|HTMLVideoElement
+     * @version Egret 2.4
+     * @platform Web,Native
+     */
+    /**
+     * @language en_US
+     * Image, Canvas, BitmapData, Video, Egret.
+     * @param data Objects that need to be converted include HTMLImageElement|HTMLCanvasElement|HTMLVideoElement
+     * @version Egret 2.4
+     * @platform Web,Native
+     */
+    function $toBitmapData(data: any): BitmapData;
 }
 declare module egret {
     /**

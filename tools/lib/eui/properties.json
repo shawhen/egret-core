@@ -19,7 +19,9 @@
 		"letterSpacing":"number",
 		"lineSpacing":"number",
 		"super":"egret.DisplayObject",
-		"text":"string"
+		"text":"string",
+		"textAlign":"string",
+		"verticalAlign":"string"
 	},
 	"egret.BlurFilter":
 	{
@@ -58,7 +60,6 @@
 	},
 	"egret.DisplayObjectContainer":
 	{
-		"implements":["egret.IDisplayObjectContainer"],
 		"super":"egret.DisplayObject",
 		"touchChildren":"boolean"
 	},
@@ -100,11 +101,6 @@
 		"tx":"number",
 		"ty":"number"
 	},
-	"egret.NativeStageText":
-	{
-		"implements":["egret.StageText"],
-		"super":"egret.EventDispatcher"
-	},
 	"egret.Point":
 	{
 		"super":"egret.HashObject",
@@ -135,7 +131,6 @@
 	},
 	"egret.Sprite":
 	{
-		"implements":["egret.IDisplayObjectContainer"],
 		"super":"egret.DisplayObjectContainer"
 	},
 	"egret.SpriteSheet":
@@ -266,6 +261,7 @@
 		"percentHeight":"number",
 		"percentWidth":"number",
 		"prompt":"string",
+		"promptColor":"number",
 		"right":"number",
 		"super":"egret.TextField",
 		"top":"number",
@@ -444,6 +440,7 @@
 	},
 	"eui.Scroller":
 	{
+		"bounces":"boolean",
 		"horizontalScrollBar":"eui.HScrollBar",
 		"scrollPolicyH":"string",
 		"scrollPolicyV":"string",
@@ -494,6 +491,18 @@
 	"eui.TabBar":
 	{
 		"super":"eui.ListBase"
+	},
+	"eui.TextInput":
+	{
+		"displayAsPassword":"boolean",
+		"maxChars":"number",
+		"prompt":"string",
+		"promptDisplay":"eui.Label",
+		"restrict":"string",
+		"super":"eui.Component",
+		"text":"string",
+		"textColor":"number",
+		"textDisplay":"eui.EditableText"
 	},
 	"eui.TileLayout":
 	{

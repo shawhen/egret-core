@@ -100,7 +100,7 @@ module egret {
             var m = target.$getInvertedConcatenatedMatrix();
             var localX = m.a * stageX + m.c * stageY + m.tx;
             var localY = m.b * stageX + m.d * stageY + m.ty;
-            var context = sys.sharedRenderContext;
+            var context = sys.hitTestRenderContext;
             context.surface.width = context.surface.height = 3;
             context.translate(1 - localX, 1 - localY);
             this.$renderContext.$render(context, true);
@@ -428,6 +428,10 @@ module egret {
             this.strokeStyleColor = this._parseColor(color, alpha);
 
             this.moveTo(this.lineX, this.lineY);
+
+            if(thickness <= 0) {
+                thickness = 1;
+            }
 
             this.$renderContext.lineWidth = thickness;
             this.$renderContext.strokeStyle = this.strokeStyleColor;

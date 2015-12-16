@@ -131,7 +131,7 @@ module egret {
     const enum Keys {
         scaleX,
         scaleY,
-        skewX,
+        skewX,//弧度 radian
         skewY,
         rotation,
         name,
@@ -145,6 +145,8 @@ module egret {
         anchorOffsetY,
         explicitWidth,
         explicitHeight,
+        skewXdeg,//角度 degree
+        skewYdeg
     }
 
     /**
@@ -235,7 +237,9 @@ module egret {
                 12: 0,               //anchorOffsetX,
                 13: 0,                //anchorOffsetY,
                 14: NaN,           //explicitWidth,
-                15: NaN            //explicitHeight,
+                15: NaN,           //explicitHeight,
+                16: 0,               //skewXdeg,
+                17: 0                //skewYdeg
             };
         }
 
@@ -519,6 +523,8 @@ module egret {
                 values[Keys.scaleY] = m.$getScaleY();
                 values[Keys.skewX] = matrix.$getSkewX();
                 values[Keys.skewY] = matrix.$getSkewY();
+                values[Keys.skewXdeg] = clampRotation(values[Keys.skewX] * 180 / Math.PI);
+                values[Keys.skewYdeg] = clampRotation(values[Keys.skewY] * 180 / Math.PI);
                 values[Keys.rotation] = clampRotation(values[Keys.skewY] * 180 / Math.PI);
             }
             this.$removeFlags(sys.DisplayObjectFlags.InvalidMatrix);
@@ -538,21 +544,22 @@ module egret {
                 if (this.$parent) {
                     this.$parent.$getConcatenatedMatrix().$preMultiplyInto(this.$getMatrix(),
                         matrix);
-                    var values = this.$DisplayObject;
-                    var offsetX = values[Keys.anchorOffsetX];
-                    var offsetY = values[Keys.anchorOffsetY];
-                    var rect = this.$scrollRect;
-                    if (rect) {
-                        matrix.$preMultiplyInto($TempMatrix.setTo(1, 0, 0, 1, -rect.x - offsetX, -rect.y - offsetY), matrix);
-
-                    }
-                    else if (offsetX != 0 || offsetY != 0) {
-                        matrix.$preMultiplyInto($TempMatrix.setTo(1, 0, 0, 1, -offsetX, -offsetY), matrix);
-                    }
-
                 } else {
                     matrix.copyFrom(this.$getMatrix());
                 }
+
+                var values = this.$DisplayObject;
+                var offsetX = values[Keys.anchorOffsetX];
+                var offsetY = values[Keys.anchorOffsetY];
+                var rect = this.$scrollRect;
+                if (rect) {
+                    matrix.$preMultiplyInto($TempMatrix.setTo(1, 0, 0, 1, -rect.x - offsetX, -rect.y - offsetY), matrix);
+
+                }
+                else if (offsetX != 0 || offsetY != 0) {
+                    matrix.$preMultiplyInto($TempMatrix.setTo(1, 0, 0, 1, -offsetX, -offsetY), matrix);
+                }
+                
                 if (this.$displayList) {
                     this.$displayList.$renderRegion.moved = true;
                 }
@@ -837,7 +844,7 @@ module egret {
          * @platform Web,Native
          */
         public get skewX():number {
-            return this.$DisplayObject[Keys.skewX];
+            return this.$DisplayObject[Keys.skewXdeg];
         }
 
         public set skewX(value:number) {
@@ -851,14 +858,15 @@ module egret {
          */
         $setSkewX(value:number):boolean {
             value = egret.sys.getNumber(value);
+            var values = this.$DisplayObject;
+            if (value == values[Keys.skewXdeg]) {
+                return false;
+            }
+            values[Keys.skewXdeg] = value;
 
             value = clampRotation(value);
             value = value / 180 * Math.PI;
 
-            var values = this.$DisplayObject;
-            if (value == values[Keys.skewX]) {
-                return false;
-            }
             values[Keys.skewX] = value;
             this.invalidateMatrix();
 
@@ -873,7 +881,7 @@ module egret {
          * @platform Web,Native
          */
         public get skewY():number {
-            return this.$DisplayObject[Keys.skewY];
+            return this.$DisplayObject[Keys.skewYdeg];
         }
 
         public set skewY(value:number) {
@@ -887,14 +895,15 @@ module egret {
          */
         $setSkewY(value:number):boolean {
             value = egret.sys.getNumber(value);
+            var values = this.$DisplayObject;
+            if (value == values[Keys.skewYdeg]) {
+                return false;
+            }
+            values[Keys.skewYdeg] = value;
 
             value = clampRotation(value);
             value = value / 180 * Math.PI;
 
-            var values = this.$DisplayObject;
-            if (value == values[Keys.skewY]) {
-                return false;
-            }
             values[Keys.skewY] = value;
             this.invalidateMatrix();
 
@@ -1290,7 +1299,7 @@ module egret {
             }
             this.$alpha = value;
             this.$propagateFlagsDown(sys.DisplayObjectFlags.InvalidConcatenatedAlpha);
-            this.$invalidate(true);
+            this.$invalidate();
 
             return true;
         }
@@ -1786,7 +1795,7 @@ module egret {
         /**
          * @private
          * 标记此显示对象需要重绘。此方法会触发自身的cacheAsBitmap重绘。如果只是矩阵改变，自身显示内容并不改变，应该调用$invalidateTransform().
-         * @param notiryChildren 是否标记子项也需要重绘。传入false或不传入，将只标记自身需要重绘。通常只有alpha属性改变会需要通知子项重绘。
+         * @param notiryChildren 是否标记子项也需要重绘。传入false或不传入，将只标记自身需要重绘。注意:当子项cache时不会继续向下标记
          */
         $invalidate(notifyChildren?:boolean):void {
             if (!this.$renderRegion || this.$hasFlags(sys.DisplayObjectFlags.DirtyRender)) {
@@ -1840,12 +1849,12 @@ module egret {
          * @private
          * 更新对象在舞台上的显示区域和透明度,返回显示区域是否发生改变。
          */
-        $update():boolean {
+        $update(bounds?:Rectangle):boolean {
             this.$removeFlagsUp(sys.DisplayObjectFlags.Dirty);
             this.$getConcatenatedAlpha();
             //必须在访问moved属性前调用以下两个方法，因为moved属性在以下两个方法内重置。
             var concatenatedMatrix = this.$getConcatenatedMatrix();
-            var bounds = this.$getContentBounds();
+            var renderBounds = bounds || this.$getContentBounds();
             var displayList = this.$displayList || this.$parentDisplayList;
             var region = this.$renderRegion;
             if (!displayList) {
@@ -1864,7 +1873,7 @@ module egret {
                 this.$getConcatenatedMatrixAt(root, matrix);
             }
             displayList.$ratioMatrix.$preMultiplyInto(matrix, matrix);
-            region.updateRegion(bounds, matrix);
+            region.updateRegion(renderBounds, matrix);
             return true;
         }
 
@@ -1911,6 +1920,9 @@ module egret {
                 return null;
             }
             var m = this.$getInvertedConcatenatedMatrix();
+            if(m.a == 0 && m.b == 0 && m.c == 0 && m.d == 0){//防止父类影响子类
+                return null;
+            }
             var bounds = this.$getContentBounds();
             var localX = m.a * stageX + m.c * stageY + m.tx;
             var localY = m.b * stageX + m.d * stageY + m.ty;
@@ -1947,28 +1959,54 @@ module egret {
          * 注意，不要在大量物体中使用精确碰撞像素检测，这回带来巨大的性能开销
          * @param x {number}  要测试的此对象的 x 坐标。
          * @param y {number}  要测试的此对象的 y 坐标。
-         * @param shapeFlag {boolean} 是检查对象 (true) 的实际像素，还是检查边框 (false) 的实际像素。暂未实现。
+         * @param shapeFlag {boolean} 是检查对象 (true) 的实际像素，还是检查边框 (false) 的实际像素。
          * @returns {boolean} 如果显示对象与指定的点重叠或相交，则为 true；否则为 false。
          * @version Egret 2.4
          * @platform Web,Native
          */
         public hitTestPoint(x:number, y:number, shapeFlag?:boolean):boolean {
-            if(!shapeFlag) {
-                return !!DisplayObject.prototype.$hitTest.call(this, x, y);
+            if (!shapeFlag) {
+                var values = this.$DisplayObject;
+                if (values[Keys.scaleX] == 0 || values[Keys.scaleY] == 0) {
+                    return false;
+                }
+                var m = this.$getInvertedConcatenatedMatrix();
+                var bounds = this.getBounds();
+                var localX = m.a * x + m.c * y + m.tx;
+                var localY = m.b * x + m.d * y + m.ty;
+                if (bounds.contains(localX, localY)) {
+                    //这里不考虑设置mask的情况
+                    var rect = this.$scrollRect ? this.$scrollRect : this.$maskRect;
+                    if (rect && !rect.contains(localX, localY)) {
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
             }
             else {
                 var m = this.$getInvertedConcatenatedMatrix();
                 var localX = m.a * x + m.c * y + m.tx;
                 var localY = m.b * x + m.d * y + m.ty;
-                var context = sys.sharedRenderContext;
-                context.surface.width = context.surface.height = 3;
-                context.translate(1 - localX, 1 - localY);
-                this.$render(context);
-                var data:Uint8Array = context.getImageData(1, 1, 1, 1).data;
-                if (data[3] === 0) {
-                    return false;
+                var rectangle = Rectangle.create();
+                rectangle.setTo(localX, localY, 3, 3);
+                var renderTexture = new RenderTexture();
+                renderTexture.drawToTexture(this, rectangle);
+                var context = renderTexture["context"];
+                var data:Uint8Array;
+                try {
+                    data = context.getImageData(0, 0, 1, 1).data;
                 }
-                return true;
+                catch (e) {
+                    throw new Error(sys.tr(1040));
+                }
+                var result = true;
+                if (data[3] === 0) {
+                    result = false;
+                }
+                Rectangle.release(rectangle);
+                renderTexture.dispose();
+                return result;
             }
         }
 

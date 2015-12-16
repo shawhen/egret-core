@@ -26,6 +26,7 @@ module egret {
     locale_strings[1015] = "xml not found!";
     locale_strings[1016] = "{0}已经废弃";
     locale_strings[1017] = "JSON文件格式不正确: {0}\ndata: {1}";
+    locale_strings[1018] = "9宫格设置错误";
 
     locale_strings[1022] = "{0} ArgumentError";
     locale_strings[1023] = "此方法在ScrollView内不可用!";
@@ -39,6 +40,10 @@ module egret {
     locale_strings[1035] = "Native 下暂未实现此功能！";
     locale_strings[1036] = "声音已停止，请重新调用 Sound.play() 来播放声音！";
     locale_strings[1037] = "非正确的blob加载！";
+    locale_strings[1038] = "XML 格式错误!";
+    locale_strings[1039] = "跨域图片不能设置 pixelHitTest 属性!";
+    locale_strings[1040] = "hitTestPoint 不能对跨域图片进行检测! 请检查该显示对象内是否含有跨域元素";
+    locale_strings[1041] = "egret.MainContext.runtimeType 已废弃,请使用egret.Capabilities.runtimeType 代替";
 
 
     //gui  3000-3099

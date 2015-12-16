@@ -43,6 +43,7 @@ module egret.web {
          */
         public constructor() {
             sys.sharedRenderContext = this.create().renderContext;
+            sys.hitTestRenderContext = this.create().renderContext;
             for (var i = 0; i < 3; i++) {
                 surfacePool.push(this.create());
             }
@@ -108,7 +109,7 @@ module egret.web {
             var context = canvas.getContext("2d");
             canvas["renderContext"] = context;
             context["surface"] = canvas;
-            toBitmapData(canvas);
+            $toBitmapData(canvas);
 
             if (egret.sys.isUndefined(context["imageSmoothingEnabled"])) {
                 var keys = ["webkitImageSmoothingEnabled", "mozImageSmoothingEnabled", "msImageSmoothingEnabled"];

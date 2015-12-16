@@ -45,6 +45,7 @@ declare module egret {
         compile?: boolean;
         password?: string;
         keepEXMLTS: boolean;
+        exmlGenJs:boolean;
         log: boolean;
         nativeTemplatePath: string;
         all: boolean;
@@ -170,8 +171,6 @@ declare module egret {
         getModulesDts()
 
         getModuleReferenceInfo()
-
-        getResourceName()
 
         getPublishType(runtime:string):number;
         getResources():Array<string>;

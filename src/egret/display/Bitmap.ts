@@ -130,12 +130,7 @@ module egret {
 
             var bitmapData = this.$Bitmap[sys.BitmapKeys.bitmapData];
             if (bitmapData) {
-                if (bitmapData instanceof Texture) {
-                    Texture.$addDisplayObject(this, bitmapData._bitmapData.hashCode);
-                }
-                else {
-                    Texture.$addDisplayObject(this, bitmapData.hashCode);
-                }
+                Texture.$addDisplayObject(this, bitmapData);
             }
         }
 
@@ -148,12 +143,7 @@ module egret {
 
             var bitmapData = this.$Bitmap[sys.BitmapKeys.bitmapData];
             if (bitmapData) {
-                if (bitmapData instanceof Texture) {
-                    Texture.$removeDisplayObject(this, bitmapData._bitmapData.hashCode);
-                }
-                else {
-                    Texture.$removeDisplayObject(this, bitmapData.hashCode);
-                }
+                Texture.$removeDisplayObject(this, bitmapData);
             }
         }
 
@@ -218,20 +208,13 @@ module egret {
          */
         $setBitmapData(value:BitmapData|Texture):boolean {
             var values = this.$Bitmap;
-            if (value == values[sys.BitmapKeys.bitmapData]) {
+            var oldBitmapData = values[sys.BitmapKeys.bitmapData];
+            if (value == oldBitmapData) {
                 return false;
             }
             values[sys.BitmapKeys.bitmapData] = value;
             if (value) {
-                if (value instanceof Texture) {
-                    var texture = <Texture>value;
-
-                    this.setImageData(texture._bitmapData, texture._bitmapX, texture._bitmapY, texture._bitmapWidth,
-                        texture._bitmapHeight, texture._offsetX, texture._offsetY, texture.$getTextureWidth(), texture.$getTextureHeight());
-                }
-                else {
-                    this.setImageData(<BitmapData>value, 0, 0, (<BitmapData>value).width, (<BitmapData>value).height, 0, 0, (<BitmapData>value).width, (<BitmapData>value).height);
-                }
+                this.$refreshImageData();
             }
             else {
                 this.setImageData(null, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -240,16 +223,33 @@ module egret {
             }
 
             if (this.$stage) {
-                if (value instanceof Texture) {
-                    Texture.$addDisplayObject(this, value._bitmapData.hashCode);
+                if(oldBitmapData) {
+                    Texture.$removeDisplayObject(this, oldBitmapData);
                 }
-                else {
-                    Texture.$addDisplayObject(this, value.hashCode);
-                }
+                Texture.$addDisplayObject(this, value);
             }
 
             this.$invalidateContentBounds();
             return true;
+        }
+
+        /**
+         * @private
+         */
+        public $refreshImageData():void {
+            var values = this.$Bitmap;
+            var bitmapData = values[sys.BitmapKeys.bitmapData];
+            if (bitmapData) {
+                if (bitmapData instanceof Texture) {
+                    var texture = <Texture>bitmapData;
+                    this.setImageData(texture._bitmapData, texture._bitmapX, texture._bitmapY, texture._bitmapWidth,
+                        texture._bitmapHeight, texture._offsetX, texture._offsetY, texture.$getTextureWidth(), texture.$getTextureHeight());
+                }
+                else {
+                    this.setImageData(<BitmapData>bitmapData, 0, 0, (<BitmapData>bitmapData).width, (<BitmapData>bitmapData).height,
+                        0, 0, (<BitmapData>bitmapData).width, (<BitmapData>bitmapData).height);
+                }
+            }
         }
 
         /**
@@ -307,7 +307,6 @@ module egret {
         /**
          * @language en_US
          * Determines how the bitmap fills in the dimensions.
-         * ends at the edge of the region.</p>
          * <p>When set to <code>BitmapFillMode.REPEAT</code>, the bitmap
          * repeats to fill the region.</p>
          * <p>When set to <code>BitmapFillMode.SCALE</code>, the bitmap
@@ -438,12 +437,10 @@ module egret {
          */
         $measureContentBounds(bounds:Rectangle):void {
             var values = this.$Bitmap;
-            var x:number = values[sys.BitmapKeys.offsetX];
-            var y:number = values[sys.BitmapKeys.offsetY];
             if (values[sys.BitmapKeys.image]) {
                 var values = this.$Bitmap;
-                var w:number = !isNaN(values[sys.BitmapKeys.explicitBitmapWidth]) ? values[sys.BitmapKeys.explicitBitmapWidth] : x + values[sys.BitmapKeys.clipWidth];
-                var h:number = !isNaN(values[sys.BitmapKeys.explicitBitmapHeight]) ? values[sys.BitmapKeys.explicitBitmapHeight] : y + values[sys.BitmapKeys.clipHeight];
+                var w:number = !isNaN(values[sys.BitmapKeys.explicitBitmapWidth]) ? values[sys.BitmapKeys.explicitBitmapWidth] : values[sys.BitmapKeys.width];
+                var h:number = !isNaN(values[sys.BitmapKeys.explicitBitmapHeight]) ? values[sys.BitmapKeys.explicitBitmapHeight] : values[sys.BitmapKeys.height];
                 bounds.setTo(0, 0, w, h);
             }
             else {
@@ -517,14 +514,26 @@ module egret {
             var displayList = this.$displayList;
             if (displayList) {
                 context = displayList.renderContext;
-                data = context.getImageData(localX - displayList.offsetX, localY - displayList.offsetY, 1, 1).data;
+                try {
+                    data = context.getImageData(localX - displayList.offsetX, localY - displayList.offsetY, 1, 1).data;
+                }
+                catch (e) {
+                    console.log(this.$Bitmap[sys.BitmapKeys.bitmapData]);
+                    throw new Error(sys.tr(1039));
+                }
             }
             else {
-                context = sys.sharedRenderContext;
+                context = sys.hitTestRenderContext;
                 context.surface.width = context.surface.height = 3;
                 context.translate(1 - localX, 1 - localY);
                 this.$render(context);
-                data = context.getImageData(1, 1, 1, 1).data;
+                try {
+                    data = context.getImageData(1, 1, 1, 1).data;
+                }
+                catch (e) {
+                    console.log(this.$Bitmap[sys.BitmapKeys.bitmapData]);
+                    throw new Error(sys.tr(1039));
+                }
             }
             if (data[3] === 0) {
                 return null;
@@ -668,22 +677,19 @@ module egret {
             //             +------+------+------+
             //                w0     w1     w2
             //
-
-            if (sourceH0 > 0) {
-                if (sourceW0 > 0) context.drawImage(image, sourceX0, sourceY0, sourceW0, sourceH0, targetX0, targetY0, targetW0, targetH0);
-                if (sourceW1 > 0) context.drawImage(image, sourceX1, sourceY0, sourceW1, sourceH0, targetX1, targetY0, targetW1, targetH0);
-                if (sourceW2 > 0) context.drawImage(image, sourceX2, sourceY0, sourceW2, sourceH0, targetX2, targetY0, targetW2, targetH0);
+            if (sourceH0 <= 0 || sourceH1 <= 0 || sourceH2 <= 0 || sourceW0 <= 0 || sourceW1 <= 0 || sourceW2 <= 0 || (sourceW0 + sourceW1 + sourceW2) > imageWidth || (sourceH0 + sourceH1 + sourceH2) > imageHeight) {
+                if (DEBUG)$warn(1018);
+                return;
             }
-            if (sourceH1 > 0) {
-                if (sourceW0 > 0) context.drawImage(image, sourceX0, sourceY1, sourceW0, sourceH1, targetX0, targetY1, targetW0, targetH1);
-                if (sourceW1 > 0) context.drawImage(image, sourceX1, sourceY1, sourceW1, sourceH1, targetX1, targetY1, targetW1, targetH1);
-                if (sourceW2 > 0) context.drawImage(image, sourceX2, sourceY1, sourceW2, sourceH1, targetX2, targetY1, targetW2, targetH1);
-            }
-            if (sourceH2 > 0) {
-                if (sourceW0 > 0) context.drawImage(image, sourceX0, sourceY2, sourceW0, sourceH2, targetX0, targetY2, targetW0, targetH2);
-                if (sourceW1 > 0) context.drawImage(image, sourceX1, sourceY2, sourceW1, sourceH2, targetX1, targetY2, targetW1, targetH2);
-                if (sourceW2 > 0) context.drawImage(image, sourceX2, sourceY2, sourceW2, sourceH2, targetX2, targetY2, targetW2, targetH2);
-            }
+            context.drawImage(image, sourceX0, sourceY0, sourceW0, sourceH0, targetX0, targetY0, targetW0, targetH0);
+            context.drawImage(image, sourceX1, sourceY0, sourceW1, sourceH0, targetX1, targetY0, targetW1, targetH0);
+            context.drawImage(image, sourceX2, sourceY0, sourceW2, sourceH0, targetX2, targetY0, targetW2, targetH0);
+            context.drawImage(image, sourceX0, sourceY1, sourceW0, sourceH1, targetX0, targetY1, targetW0, targetH1);
+            context.drawImage(image, sourceX1, sourceY1, sourceW1, sourceH1, targetX1, targetY1, targetW1, targetH1);
+            context.drawImage(image, sourceX2, sourceY1, sourceW2, sourceH1, targetX2, targetY1, targetW2, targetH1);
+            context.drawImage(image, sourceX0, sourceY2, sourceW0, sourceH2, targetX0, targetY2, targetW0, targetH2);
+            context.drawImage(image, sourceX1, sourceY2, sourceW1, sourceH2, targetX1, targetY2, targetW1, targetH2);
+            context.drawImage(image, sourceX2, sourceY2, sourceW2, sourceH2, targetX2, targetY2, targetW2, targetH2);
         }
     }
 }

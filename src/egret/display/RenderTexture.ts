@@ -79,34 +79,35 @@ module egret {
             if (clipBounds && (clipBounds.width == 0 || clipBounds.height==0)){
                 return false;
             }
-            this.dispose();
+            if(this.rootDisplayList) {
+                sys.DisplayList.release(this.rootDisplayList);
+                this.rootDisplayList = null;
+            }
+            if(this.context) {
+                sys.surfaceFactory.release(this.context.surface);
+            }
 
-            //todo clipBounds?
             var bounds = clipBounds || displayObject.$getOriginalBounds();
             if (bounds.width == 0 || bounds.height == 0) {
                 return false;
             }
 
             scale /= $TextureScaleFactor;
-            var width = (bounds.x + bounds.width) * scale;
-            var height = (bounds.y + bounds.height) * scale;
+            var width = (bounds.x + bounds.width);
+            var height = (bounds.y + bounds.height);
             if(clipBounds) {
-                width = bounds.width * scale;
-                height = bounds.height * scale;
+                width = bounds.width;
+                height = bounds.height;
             }
             this.context = this.createRenderContext(width, height);
             if (!this.context) {
                 return false;
             }
 
-            var c1 = new egret.DisplayObjectContainer();
-            c1.$children.push(displayObject);
-            c1.scaleX = c1.scaleY = scale;
-
             var root = new egret.DisplayObjectContainer();
             this.rootDisplayList = sys.DisplayList.create(root);
             root.$displayList = this.rootDisplayList;
-            root.$children.push(c1);
+            root.$children.push(displayObject);
 
             var hasRenderRegion = displayObject.$renderRegion;
             if(!hasRenderRegion) {
@@ -122,13 +123,16 @@ module egret {
                 displayObject.$renderRegion = null;
             }
 
-            //保存绘制矩阵
             var renderMatrix = displayObject.$renderMatrix;
             var invertMatrix = Matrix.create();
             renderMatrix.$invertInto(invertMatrix);
             //应用裁切
             if(clipBounds) {
                 invertMatrix.translate(-clipBounds.x, -clipBounds.y);
+            }
+            //应用缩放
+            if(scale) {
+                invertMatrix.scale(scale, scale);
             }
 
             this.context.clearRect(0, 0, width, height);
@@ -137,7 +141,7 @@ module egret {
             Matrix.release(invertMatrix);
 
             this._setBitmapData(this.context.surface);
-            //设置纹理参数
+            //设置纹理参数,todo 优化性能
             this.$initData(0, 0, width, height, 0, 0, width, height, width, height);
             this.$reset(displayObject);
             this.$displayListMap = {};
@@ -323,8 +327,15 @@ module egret {
                 if (hasBlendMode) {
                     context.globalCompositeOperation = compositeOp;
                 }
-                context.setTransform(1, 0, 0, 1, region.minX, region.minY);
-                context.drawImage(displayContext.surface, 0, 0);
+                if (rootMatrix) {
+                    context.translate(region.minX, region.minY);
+                    context.drawImage(displayContext.surface, 0, 0);
+                    context.setTransform(rootMatrix.a, rootMatrix.b, rootMatrix.c, rootMatrix.d, rootMatrix.tx, rootMatrix.ty);
+                }
+                else {//绘制到舞台上时，所有矩阵都是绝对的，不需要调用transform()叠加。
+                    context.setTransform(1, 0, 0, 1, region.minX, region.minY);
+                    context.drawImage(displayContext.surface, 0, 0);
+                }
 
                 if (hasBlendMode) {
                     context.globalCompositeOperation = defaultCompositeOp;

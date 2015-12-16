@@ -193,14 +193,11 @@ module eui {
                     if (text.charAt(0) == "<") {
                         clazz = EXML.parse(text);
                     }
-                    else if (text.substr(text.length - 5, 5).toLowerCase() == ".exml") {
-                        EXML.load(skinName, this.onExmlLoaded, this, true);
-                        return;
-                    }
                     else{
                         clazz = egret.getDefinitionByName(skinName);
-                        if(!clazz) {
-                            DEBUG && egret.$error(2203,skinName);
+                        if(!clazz){
+                            EXML.load(skinName, this.onExmlLoaded, this, true);
+                            return;
                         }
                     }
                     if (clazz) {
@@ -415,11 +412,12 @@ module eui {
         $setTouchChildren(value:boolean):boolean {
             value = !!value;
             var values = this.$Component;
+            values[sys.ComponentKeys.explicitTouchChildren] = value;
             if (values[sys.ComponentKeys.enabled]) {
+                values[sys.ComponentKeys.explicitTouchChildren] = value;
                 return super.$setTouchChildren(value);
             }
             else {
-                values[sys.ComponentKeys.explicitTouchChildren] = value;
                 return true;
             }
         }
@@ -432,11 +430,11 @@ module eui {
         $setTouchEnabled(value:boolean):boolean {
             value = !!value;
             var values = this.$Component;
+            values[sys.ComponentKeys.explicitTouchEnabled] = value;
             if (values[sys.ComponentKeys.enabled]) {
                 return super.$setTouchEnabled(value);
             }
             else {
-                values[sys.ComponentKeys.explicitTouchEnabled] = value;
                 return true;
             }
         }

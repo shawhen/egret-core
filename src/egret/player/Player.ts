@@ -168,7 +168,7 @@ module egret.sys {
          * @private
          * 渲染屏幕
          */
-        $render(triggerByFrame:boolean):void {
+        $render(triggerByFrame:boolean, costTicker:number):void {
             if (this.showFPS || this.showLog) {
                 // 总是把fps面板放到最上面去渲染
                 this.stage.addChild(this.fpsDisplay);
@@ -200,7 +200,8 @@ module egret.sys {
                     }
                     dirtyRatio = Math.ceil(dirtyArea * 1000 / (stage.stageWidth * stage.stageHeight)) / 10;
                 }
-                this.fpsDisplay.update(drawCalls, dirtyRatio, t1 - t/*计算脏矩形耗时*/, t2 - t1/*渲染耗时*/);
+
+                this.fpsDisplay.update(drawCalls, dirtyRatio, t1 - t/*计算脏矩形耗时*/, t2 - t1/*渲染耗时*/, costTicker);
             }
         }
 
@@ -268,7 +269,7 @@ module egret.sys {
                 stage.$stageHeight = stageHeight;
                 this.screenDisplayList.setDevicePixelRatio(pixelRatio);
                 this.screenDisplayList.setClipRect(stageWidth, stageHeight);
-                if (DEBUG && this.stageDisplayList) {
+                if (this.stageDisplayList) {
                     this.stageDisplayList.setDevicePixelRatio(pixelRatio);
                     this.stageDisplayList.setClipRect(stageWidth, stageHeight);
                 }
@@ -363,7 +364,7 @@ module egret.sys {
     };
 
     function displayFPS(showFPS:boolean, showLog:boolean, logFilter:string, styles:Object):void {
-        if(showLog) {
+        if (showLog) {
             egret.log = function () {
                 var length = arguments.length;
                 var info = "";
@@ -474,6 +475,9 @@ module egret.sys {
             this.lastTime = 0;
             this.drawCalls = 0;
             this.dirtyRatio = 0;
+            this.costDirty = 0;
+            this.costRender = 0;
+            this.costTicker = 0;
             this._stage = stage;
             this.showFPS = showFPS;
             this.showLog = showLog;
@@ -515,28 +519,37 @@ module egret.sys {
             textField.size = egret.sys.isUndefined(this.styles["size"]) ? 12 : this.styles["size"] / 2;
             textField.y = 10;
         };
-        FPSImpl.prototype.update = function (drawCalls, dirtyRatio) {
-            var args = [];
-            for (var _i = 2; _i < arguments.length; _i++) {
-                args[_i - 2] = arguments[_i];
-            }
+        FPSImpl.prototype.update = function (drawCalls, dirtyRatio, costDirty, costRender, costTicker) {
             var current = egret.getTimer();
             this.totalTime += current - this.lastTime;
             this.lastTime = current;
             this.totalTick++;
-            this.drawCalls = Math.max(drawCalls, this.drawCalls);
-            this.dirtyRatio = Math.max(dirtyRatio, this.dirtyRatio);
+            this.drawCalls += drawCalls;
+            this.dirtyRatio += dirtyRatio;
+            this.costDirty += costDirty;
+            this.costRender += costRender;
+            this.costTicker += costTicker;
             if (this.totalTime > 500) {
+
                 var lastFPS = Math.round(this.totalTick * 1000 / this.totalTime);
-                this.totalTick = 0;
-                this.totalTime = 0;
-                var text = "FPS: " + lastFPS + "\nDraw: " + this.drawCalls + "," + this.dirtyRatio + "%\nCost: " + args.join(",");
+                var lastDrawCalls = Math.round(this.drawCalls / this.totalTick);
+                var lastDirtyRatio = Math.round(this.dirtyRatio / this.totalTick);
+                var lastCostDirty = Math.round(this.costDirty / this.totalTick);
+                var lastCostRender = Math.round(this.costRender / this.totalTick);
+                var lastCostTicker = Math.round(this.costTicker / this.totalTick);
+
+                var text = "FPS: " + lastFPS + "\nDraw: " + lastDrawCalls + "," + lastDirtyRatio + "%\nCost: " + lastCostTicker + "," + lastCostDirty + "," + lastCostRender;
                 if (this.textField.text != text) {
                     this.textField.text = text;
                     this.updateLayout();
                 }
+                this.totalTick = 0;
+                this.totalTime = this.totalTime % 500;
                 this.drawCalls = 0;
                 this.dirtyRatio = 0;
+                this.costDirty = 0;
+                this.costRender = 0;
+                this.costTicker = 0;
             }
         };
         /**
